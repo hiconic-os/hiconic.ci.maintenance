@@ -1,9 +1,69 @@
-name: Build Unpublished
+name: Update Artifact Index
 
 on:
   workflow_dispatch:
+    inputs:
+      comment-input:
+        type: string
+        required: false
+
+    secrets:
+      DEVROCK_PIPELINE_UPLOAD_PASSWORD:
+        required: true
+      DEVROCK_PIPELINE_FIREBASE_LOCKING_USER:
+        required: true
+      DEVROCK_PIPELINE_FIREBASE_LOCKING_PASSWORD:
+        required: true
+      DEVROCK_PIPELINE_FIREBASE_LOCKING_WEBAPI_KEY:
+        required: true  
 
 jobs:
-  run:
-    uses: hiconic-os/hiconic.ci.workflows/.github/workflows/unpublished.yaml@main
-    secrets: inherit
+  update-artifact-index:
+    runs-on: ubuntu-latest
+    container: ghcr.io/hiconic-os/ci-devrock-sdk/main:latest
+
+    env:
+      # Used in this file
+
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+      GIT_REPO_DIR: ${{ github.workspace }}/git-repo
+
+      DR_OPTS: "--stacktrace"
+
+      # Used by Devrock tools
+      DEVROCK_PIPELINE_EXTERNAL_SEQUENCING: true
+      DEVROCK_PIPELINE_COLORS: false
+
+      DEVROCK_PIPELINE_FIREBASE_LOCKING_PASSWORD: ${{ secrets.DEVROCK_PIPELINE_FIREBASE_LOCKING_PASSWORD }}
+      DEVROCK_PIPELINE_FIREBASE_LOCKING_USER: ${{ secrets.DEVROCK_PIPELINE_FIREBASE_LOCKING_USER }}
+      DEVROCK_PIPELINE_FIREBASE_LOCKING_WEBAPI_KEY: ${{ secrets.DEVROCK_PIPELINE_FIREBASE_LOCKING_WEBAPI_KEY }}
+
+    defaults:
+      run:
+        working-directory: ${{ env.GIT_REPO_DIR }}
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          path: "git-repo"
+
+      - name: Update Artifact Index
+        run: |
+          dr initialize-exchange -PcommentInput="${{ inputs.comment-input }}"  ${{ env.DR_OPTS }}
+
+          echo '!devrock.cicd.model.api.FirebaseRealtimeDistributedLocking {owner: "update-artifact-index/${{ github.event.organization.login }}/${{ env.GITHUB_REPO_NAME }}/${{ github.ref_name }}#${{ github.run_number}}", user: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_USER}", password: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_PASSWORD}", webApiKey: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_WEBAPI_KEY}", tableUri: "https://hiconic-os-default-rtdb.europe-west1.firebasedatabase.app/test-locks/"}' > .step-exchange/distributed-locking.yaml
+
+          dr enrich-exchange-context ${{ env.DR_OPTS }}
+
+          dr update-github-artifact-index -Ptoken=${{ secrets.DEVROCK_PIPELINE_UPLOAD_PASSWORD }} -Porganization=${{ github.event.organization.login }} -Prepository=maven-repo-dev ${{ env.DR_OPTS }}
+
+      - name: Save step-exchange Data
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: "step-exchange--${{ env.GITHUB_REPO_NAME }}--#${{ github.run_number }}"
+          path: ${{ github.workspace }}/git-repo/.step-exchange/
