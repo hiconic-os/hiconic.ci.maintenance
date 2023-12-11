@@ -58,19 +58,19 @@ jobs:
           ref: ${{ github.ref }}
           path: "git-repo"
 
-      - name: Curl Test
-        run: |
-          curl "https://${{ secrets.DEVROCK_PIPELINE_UPLOAD_PASSWORD }}@api.github.com/orgs/hiconic-os/packages?package_type=maven&per_page=100&page=1" -i
-
-      # - name: Update Artifact Index
+      # - name: Curl Test
       #   run: |
-      #     dr initialize-exchange -PcommentInput="${{ inputs.comment-input }}"  ${{ env.DR_OPTS }}
+      #     curl "https://${{ secrets.DEVROCK_PIPELINE_UPLOAD_PASSWORD }}@api.github.com/orgs/hiconic-os/packages?package_type=maven&per_page=100&page=1" -i
 
-      #     echo '!devrock.cicd.model.api.FirebaseRealtimeDistributedLocking {owner: "update-artifact-index/${{ github.event.organization.login }}/${{ env.GITHUB_REPO_NAME }}/${{ github.ref_name }}#${{ github.run_number}}", user: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_USER}", password: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_PASSWORD}", webApiKey: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_WEBAPI_KEY}", tableUri: "https://hiconic-os-default-rtdb.europe-west1.firebasedatabase.app/test-locks/"}' > .step-exchange/distributed-locking.yaml
+      - name: Update Artifact Index
+        run: |
+          dr initialize-exchange -PcommentInput="${{ inputs.comment-input }}"  ${{ env.DR_OPTS }}
 
-      #     dr enrich-exchange-context ${{ env.DR_OPTS }}
+          echo '!devrock.cicd.model.api.FirebaseRealtimeDistributedLocking {owner: "update-artifact-index/${{ github.event.organization.login }}/${{ env.GITHUB_REPO_NAME }}/${{ github.ref_name }}#${{ github.run_number}}", user: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_USER}", password: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_PASSWORD}", webApiKey: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_WEBAPI_KEY}", tableUri: "https://hiconic-os-default-rtdb.europe-west1.firebasedatabase.app/test-locks/"}' > .step-exchange/distributed-locking.yaml
 
-      #     dr update-github-artifact-index -Ptoken=${{ secrets.DEVROCK_PIPELINE_UPLOAD_PASSWORD }} -Porganization=${{ github.event.organization.login }} -Prepository=maven-repo-dev ${{ env.DR_OPTS }}
+          dr enrich-exchange-context ${{ env.DR_OPTS }}
+
+          dr update-github-artifact-index -Ptoken=${{ secrets.DEVROCK_PIPELINE_UPLOAD_PASSWORD }} -Porganization=${{ github.event.organization.login }} -Prepository=maven-repo-dev ${{ env.DR_OPTS }}
 
       - name: Save step-exchange Data
         uses: actions/upload-artifact@v3
