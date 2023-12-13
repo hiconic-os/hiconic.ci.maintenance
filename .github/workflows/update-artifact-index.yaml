@@ -64,13 +64,13 @@ jobs:
 
       - name: Update Artifact Index
         run: |
-          dr initialize-exchange -PcommentInput="${{ inputs.comment-input }}"  ${{ env.DR_OPTS }}
+          dr initialize-exchange +PcommentInput "${{ inputs.comment-input }}"  ${{ env.DR_OPTS }}
 
           echo '!devrock.cicd.model.api.FirebaseRealtimeDistributedLocking {owner: "update-artifact-index/${{ github.event.organization.login }}/${{ env.GITHUB_REPO_NAME }}/${{ github.ref_name }}#${{ github.run_number}}", user: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_USER}", password: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_PASSWORD}", webApiKey: "${env.DEVROCK_PIPELINE_FIREBASE_LOCKING_WEBAPI_KEY}", tableUri: "https://hiconic-os-default-rtdb.europe-west1.firebasedatabase.app/test-locks/"}' > .step-exchange/distributed-locking.yaml
 
           dr enrich-exchange-context ${{ env.DR_OPTS }}
 
-          dr update-github-artifact-index -Ptoken=${{ secrets.DEVROCK_PIPELINE_UPLOAD_PASSWORD }} -Porganization=${{ github.event.organization.login }} -Prepository=maven-repo-dev ${{ env.DR_OPTS }}
+          dr update-github-artifact-index +token ${{ secrets.DEVROCK_PIPELINE_UPLOAD_PASSWORD }} +organization ${{ github.event.organization.login }} +repository maven-repo-dev ${{ env.DR_OPTS }}
 
       - name: Save step-exchange Data
         uses: actions/upload-artifact@v3
